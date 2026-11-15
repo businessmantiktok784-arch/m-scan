@@ -1,0 +1,10 @@
+{
+  "project_id": "MS-0123abcd",
+  "schema_version": 2,
+  "name": "Future schema version — must be refused",
+  "site_name": "",
+  "notes": "",
+  "status": "active",
+  "created_at": "2026-11-05T10:00:00Z",
+  "updated_at": "2026-11-05T10:00:00Z"
+}

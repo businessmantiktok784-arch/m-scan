@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mining-scanner.local/schemas/pointcloud-fusion.schema.json",
+  "title": "Point-cloud fusion operation record (v1)",
+  "description": "Contract for operation `pointcloud_fusion` (registry stage 3, NOT_IMPLEMENTED). Combines successfully registered genuine point clouds into one fused PC- asset. Fusion must refuse inputs whose registration failed or whose units/coordinate frames/scale are incompatible — never report success over incompatible inputs.",
+  "type": "object",
+  "required": ["operation_id", "project_id", "method", "sources", "coordinate_frame", "scale_status", "status", "started_at", "finished_at"],
+  "properties": {
+    "operation_id": { "type": "string", "pattern": "^OP-[0-9a-f]{8}$" },
+    "project_id": { "type": "string", "pattern": "^MS-[0-9a-f]{8}$" },
+    "method": { "enum": ["concatenate_aligned", "voxel_merged", "other"] },
+    "method_detail": { "type": "string", "maxLength": 200 },
+    "sources": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["asset_id"],
+        "properties": {
+          "asset_id": { "type": "string", "pattern": "^PC-[0-9a-f]{8}$" },
+          "registration_operation_id": { "oneOf": [{ "type": "string", "pattern": "^OP-[0-9a-f]{8}$" }, { "type": "null" }], "description": "The registration that aligned this source; null must be justified in `message`." },
+          "transform_4x4": { "oneOf": [{ "type": "array", "items": { "type": "number" }, "minItems": 16, "maxItems": 16 }, { "type": "null" }] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "output_asset_id": { "oneOf": [{ "type": "string", "pattern": "^PC-[0-9a-f]{8}$" }, { "type": "null" }] },
+    "coordinate_frame": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "point_count": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }] },
+    "scale_status": { "enum": ["UNKNOWN", "RELATIVE", "ESTIMATED", "VALIDATED"] },
+    "scale_provenance": { "oneOf": [{ "$ref": "#/$defs/scale-provenance" }, { "type": "null" }] },
+    "status": { "enum": ["queued", "running", "done", "failed"] },
+    "started_at": { "$ref": "#/$defs/timestamp" },
+    "finished_at": { "oneOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }] },
+    "message": { "type": "string", "maxLength": 2000 }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "timestamp": { "type": "string", "description": "ISO 8601, UTC or explicit offset." },
+    "scale-provenance": {
+      "type": "object",
+      "required": ["scale_status", "basis", "created_at"],
+      "properties": {
+        "scale_status": { "enum": ["UNKNOWN", "RELATIVE", "ESTIMATED", "VALIDATED"] },
+        "basis": { "enum": ["none", "known_dimension", "survey_control", "validated_depth", "external_metric_scan", "operator_assumed", "other_documented"] },
+        "detail": { "type": "string", "maxLength": 2000 },
+        "measured_by": { "type": "string", "maxLength": 120 },
+        "created_at": { "$ref": "#/$defs/timestamp" }
+      },
+      "additionalProperties": false,
+      "description": "Rules: UNKNOWN pairs with basis 'none'; operator_assumed stays ESTIMATED at best; VALIDATED requires independent metric evidence."
+    }
+  }
+}

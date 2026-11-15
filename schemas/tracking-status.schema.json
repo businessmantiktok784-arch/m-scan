@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mining-scanner.local/schemas/tracking-status.schema.json",
+  "title": "Tracking / registration status (v1)",
+  "description": "Explicit record of what tracking capability exists. In Stage 2 every field is NOT_IMPLEMENTED: no poses, trajectories, calibration or reconstructed geometry are produced. The raw camera/IMU data recorded by Stage 2 is the input a future stage would consume.",
+  "type": "object",
+  "required": ["schema_version", "visual_odometry", "camera_calibration", "feature_tracking", "pose_estimation", "visual_inertial_tracking", "note"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "visual_odometry": { "enum": ["NOT_IMPLEMENTED"] },
+    "camera_calibration": { "enum": ["NOT_IMPLEMENTED"] },
+    "feature_tracking": { "enum": ["NOT_IMPLEMENTED"] },
+    "pose_estimation": { "enum": ["NOT_IMPLEMENTED"] },
+    "visual_inertial_tracking": { "enum": ["NOT_IMPLEMENTED"] },
+    "note": { "type": "string" }
+  }
+}

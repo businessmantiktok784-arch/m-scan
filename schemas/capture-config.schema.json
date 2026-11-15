@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mining-scanner.local/schemas/capture-config.schema.json",
+  "title": "Capture configuration (v1)",
+  "description": "Fixed at session start and stored with the session record. Audio is never recorded (mute is a literal true): underground capture is video + IMU only.",
+  "type": "object",
+  "required": ["schema_version", "camera", "sensors"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "camera": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "facing": { "enum": ["back", "front"], "default": "back" },
+        "segment_duration_s": { "type": "number", "exclusiveMinimum": 0, "maximum": 600, "default": 60, "description": "Video is recorded in chunked segments; one file per chunk." },
+        "video_quality": { "enum": ["480p", "720p", "1080p"], "default": "720p" },
+        "mute": { "const": true, "description": "Audio is NOT recorded. Always true." }
+      },
+      "default": {}
+    },
+    "sensors": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "accelerometer_hz": { "type": "number", "exclusiveMinimum": 0, "maximum": 200, "default": 50 },
+        "gyroscope_hz": { "type": "number", "exclusiveMinimum": 0, "maximum": 200, "default": 50 },
+        "magnetometer_hz": { "type": "number", "exclusiveMinimum": 0, "maximum": 100, "default": 10 }
+      },
+      "default": {}
+    }
+  }
+}

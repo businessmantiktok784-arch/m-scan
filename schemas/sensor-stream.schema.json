@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mining-scanner.local/schemas/sensor-stream.schema.json",
+  "title": "Sensor stream file (v1)",
+  "description": "One JSONL (newline-delimited JSON) sensor stream on disk; each line is one validated sensor sample. Units are fixed per sensor kind and documented in docs/capture-pipeline.md.",
+  "type": "object",
+  "required": ["stream_id", "session_id", "project_id", "kind", "file_path", "media_type", "units", "requested_interval_ms", "sample_count", "byte_size", "checksum_md5", "first_sample_at", "last_sample_at", "finalized"],
+  "properties": {
+    "stream_id": { "type": "string", "pattern": "^SNS-[0-9a-f]{8}$" },
+    "session_id": { "type": "string", "pattern": "^SES-[0-9a-f]{8}$" },
+    "project_id": { "type": "string", "pattern": "^MS-[0-9a-f]{8}$" },
+    "kind": { "enum": ["accelerometer", "gyroscope", "magnetometer"] },
+    "file_path": { "type": "string", "minLength": 1, "description": "Path relative to the project directory (JSONL)." },
+    "media_type": { "const": "application/x-ndjson" },
+    "units": { "type": "string", "minLength": 1, "description": "accelerometer: g (1 g = 9.80665 m/s^2), device frame · gyroscope: rad/s, device frame · magnetometer: microtesla (uT), device frame." },
+    "requested_interval_ms": { "type": "number", "exclusiveMinimum": 0, "description": "Interval requested from the OS. The achieved interval is measured per sample (delta_ms) and never assumed equal to this." },
+    "sample_count": { "type": "integer", "minimum": 0, "description": "Set only from real subscription callbacks — never estimated." },
+    "byte_size": { "type": "integer", "minimum": 0 },
+    "checksum_md5": { "oneOf": [{ "type": "string", "pattern": "^[0-9a-f]{32}$" }, { "type": "null" }] },
+    "first_sample_at": { "oneOf": [{ "$ref": "#/$defs/timestampPair" }, { "type": "null" }] },
+    "last_sample_at": { "oneOf": [{ "$ref": "#/$defs/timestampPair" }, { "type": "null" }] },
+    "finalized": { "type": "boolean", "description": "True once the file was finalized cleanly (handle closed, hash computed)." }
+  },
+  "$defs": {
+    "timestampPair": {
+      "type": "object",
+      "required": ["epoch_ms", "monotonic_ms", "monotonic_source"],
+      "properties": {
+        "epoch_ms": { "type": "integer", "minimum": 0, "description": "Wall clock (Date.now), UTC — provenance only, can jump." },
+        "monotonic_ms": { "type": "number", "minimum": 0, "description": "Monotonic clock (performance.now origin) — basis for durations and within-boot alignment." },
+        "monotonic_source": { "const": "performance.now" }
+      }
+    }
+  }
+}

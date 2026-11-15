@@ -1,0 +1,28 @@
+# Blender extension manifest — Blender 4.2+ extension system (targets 5.1).
+#
+# Installation on the operator's desktop:
+#   1. Blender 5.1: Edit → Preferences → Add-ons → (dropdown, top-right)
+#      → "Install from Disk…"
+#   2. Select this folder zipped as mining_scanner_tools.zip (or use
+#      `blender --command extension build` from this directory to produce it).
+#   3. Enable "Mining Scanner Tools" in the add-ons list.
+#
+# The add-on is also loadable as a legacy add-on (bl_info in __init__.py) for
+# older Blender releases, but 5.1 is the supported target.
+
+schema_version = "1.0.0"
+
+id = "mining_scanner_tools"
+version = "0.2.0"
+name = "Mining Scanner Tools"
+tagline = "Inspect Underground Mining Scanner projects and scan assets"
+maintainer = "Mining Scanner project"
+type = "add-on"
+
+website = "https://example.invalid/mining-scanner"
+
+tags = ["Import-Export", "Scene", "Pipeline"]
+
+blender_version_min = "4.2.0"
+
+license = ["SPDX:GPL-3.0-or-later"]

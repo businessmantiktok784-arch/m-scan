@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mining-scanner.local/schemas/capture-manifest.schema.json",
+  "title": "Capture session manifest (v1)",
+  "description": "One manifest per capture session, written atomically after every phase change. Records what actually happened — including interruptions and warnings — never an idealized run.",
+  "type": "object",
+  "required": ["schema_version", "session_id", "project_id", "config", "created_at", "updated_at", "final_state", "started_at", "ended_at", "active_duration_s", "interruptions", "camera_recordings", "sensor_streams", "warnings"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "session_id": { "type": "string", "pattern": "^SES-[0-9a-f]{8}$" },
+    "project_id": { "type": "string", "pattern": "^MS-[0-9a-f]{8}$" },
+    "config": { "$ref": "https://mining-scanner.local/schemas/capture-config.schema.json" },
+    "created_at": { "type": "string", "format": "date-time", "description": "ISO 8601 with explicit offset." },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "final_state": { "enum": ["capturing", "paused", "stopped", "failed", "aborted"], "description": "The phase the session was in when the manifest was last written. 'stopped' is the only clean end." },
+    "started_at": { "oneOf": [{ "$ref": "#/$defs/timestampPair" }, { "type": "null" }], "description": "Wall-clock cover of the whole session, for provenance only." },
+    "ended_at": { "oneOf": [{ "$ref": "#/$defs/timestampPair" }, { "type": "null" }] },
+    "active_duration_s": { "type": "number", "minimum": 0, "description": "Cumulative time spent in the 'capturing' state, measured on the monotonic clock." },
+    "interruptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["at", "reason", "action"],
+        "properties": {
+          "at": { "$ref": "#/$defs/timestampPair" },
+          "reason": { "type": "string", "maxLength": 200 },
+          "action": { "enum": ["paused", "failed", "aborted"], "description": "What the session did next." }
+        }
+      }
+    },
+    "camera_recordings": { "type": "array", "items": { "type": "string", "pattern": "^VID-[0-9a-f]{8}$" }, "description": "Recording ids; details live in the DB and segment files." },
+    "sensor_streams": { "type": "array", "items": { "type": "string", "pattern": "^SNS-[0-9a-f]{8}$" } },
+    "warnings": { "type": "array", "items": { "type": "string", "maxLength": 500 }, "description": "Written even when empty — an explicit list beats an absent one." }
+  },
+  "$defs": {
+    "timestampPair": {
+      "type": "object",
+      "required": ["epoch_ms", "monotonic_ms", "monotonic_source"],
+      "properties": {
+        "epoch_ms": { "type": "integer", "minimum": 0, "description": "Wall clock (Date.now), UTC — provenance only, can jump." },
+        "monotonic_ms": { "type": "number", "minimum": 0, "description": "Monotonic clock (performance.now origin) — basis for durations and within-boot alignment." },
+        "monotonic_source": { "const": "performance.now" }
+      }
+    }
+  }
+}

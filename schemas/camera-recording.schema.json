@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mining-scanner.local/schemas/camera-recording.schema.json",
+  "title": "Camera recording segment (v1)",
+  "description": "One finalized (or open) camera video segment on disk. Durations come only from the monotonic clock; OS-provided pixel dimensions are recorded when reported and never invented.",
+  "type": "object",
+  "required": ["recording_id", "session_id", "project_id", "file_path", "media_type", "byte_size", "checksum_md5", "started_at", "ended_at", "duration_s", "width_px", "height_px", "camera_facing"],
+  "properties": {
+    "recording_id": { "type": "string", "pattern": "^VID-[0-9a-f]{8}$" },
+    "session_id": { "type": "string", "pattern": "^SES-[0-9a-f]{8}$" },
+    "project_id": { "type": "string", "pattern": "^MS-[0-9a-f]{8}$" },
+    "file_path": { "type": "string", "minLength": 1, "description": "Path relative to the project directory." },
+    "media_type": { "const": "video/mp4" },
+    "byte_size": { "type": "integer", "minimum": 0 },
+    "checksum_md5": { "oneOf": [{ "type": "string", "pattern": "^[0-9a-f]{32}$" }, { "type": "null" }], "description": "MD5 of the finalized file; null while the segment is still open." },
+    "started_at": { "$ref": "#/$defs/timestampPair" },
+    "ended_at": { "oneOf": [{ "$ref": "#/$defs/timestampPair" }, { "type": "null" }] },
+    "duration_s": { "oneOf": [{ "type": "number", "minimum": 0 }, { "type": "null" }], "description": "Seconds, measured on the monotonic clock — never estimated." },
+    "width_px": { "oneOf": [{ "type": "integer", "exclusiveMinimum": 0 }, { "type": "null" }], "description": "OS-provided metadata when reported; never invented." },
+    "height_px": { "oneOf": [{ "type": "integer", "exclusiveMinimum": 0 }, { "type": "null" }] },
+    "camera_facing": { "enum": ["back", "front"] }
+  },
+  "$defs": {
+    "timestampPair": {
+      "type": "object",
+      "required": ["epoch_ms", "monotonic_ms", "monotonic_source"],
+      "properties": {
+        "epoch_ms": { "type": "integer", "minimum": 0, "description": "Wall clock (Date.now), UTC — provenance only, can jump." },
+        "monotonic_ms": { "type": "number", "minimum": 0, "description": "Monotonic clock (performance.now origin) — basis for durations and within-boot alignment." },
+        "monotonic_source": { "const": "performance.now" }
+      }
+    }
+  }
+}

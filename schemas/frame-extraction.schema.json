@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mining-scanner.local/schemas/frame-extraction.schema.json",
+  "title": "Frame extraction job and extracted frame (v2)",
+  "description": "Contracts for operation `frame_extraction` (registry stage 3, IMPLEMENTED as of Stage 3.2). Timestamp honesty is structural: sample_time_s is the requested seek position in source media time; pts_ms/time_base are filled ONLY when the decoder reports the decoded frame's own presentation timestamp (the on-device platform decoder is seek-based and reports none, so they stay null); capture_time_mapping stays 'unavailable' because phone recordings provide no measurable mapping from media time to wall-clock capture time. Nothing is inferred or invented. v2 is backward-incompatible with the never-shipped v1 draft (the v1 shape was a Stage 2.1 placeholder; no v1 data exists), and mirrors src/frame/models.ts exactly.",
+  "type": "object",
+  "oneOf": [
+    { "$ref": "#/$defs/extractionJob" },
+    { "$ref": "#/$defs/frameRecord" }
+  ],
+  "$defs": {
+    "timestamp": { "type": "string", "description": "ISO 8601, UTC or explicit offset.", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})$" },
+    "extractionSettings": {
+      "type": "object",
+      "description": "Operator-chosen sampling settings, recorded verbatim in provenance.",
+      "required": ["mode", "max_frames", "image_format"],
+      "properties": {
+        "mode": { "enum": ["time_interval", "frame_rate"] },
+        "interval_s": { "type": "number", "exclusiveMinimum": 0, "maximum": 60, "description": "Mode time_interval: one frame every N seconds of media time." },
+        "target_fps": { "type": "number", "exclusiveMinimum": 0, "maximum": 60, "description": "Mode frame_rate: requested average sampling rate in frames/second." },
+        "max_frames": { "type": "integer", "minimum": 1, "maximum": 10000, "description": "Hard cap on extracted frames per source video." },
+        "image_format": { "enum": ["png", "jpeg"] },
+        "jpeg_quality": { "type": "integer", "minimum": 1, "maximum": 100, "description": "Only meaningful for jpeg; recorded verbatim, never silently altered." },
+        "max_dimension_px": { "type": "integer", "minimum": 1, "maximum": 8192, "description": "Optional down-scale bound (longest side), applied visibly and recorded." }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        { "if": { "properties": { "mode": { "const": "time_interval" } } }, "then": { "required": ["interval_s"] } },
+        { "if": { "properties": { "mode": { "const": "frame_rate" } } }, "then": { "required": ["target_fps"] } },
+        { "if": { "properties": { "image_format": { "const": "jpeg" } } }, "then": { "required": ["jpeg_quality"] } },
+        { "if": { "properties": { "image_format": { "const": "png" } } }, "then": { "not": { "required": ["jpeg_quality"] } } }
+      ]
+    },
+    "decoderIdentity": {
+      "type": "object",
+      "required": ["tool", "tool_version", "ffmpeg_version"],
+      "properties": {
+        "tool": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "tool_version": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "ffmpeg_version": { "type": ["string", "null"], "maxLength": 120, "description": "FFmpeg version when an FFmpeg-based decoder ran; null elsewhere. Never fabricated." },
+        "detail": { "type": "string", "maxLength": 1000, "description": "What the decoder actually is, stated plainly." }
+      },
+      "additionalProperties": false
+    },
+    "extractionSource": {
+      "type": "object",
+      "required": ["asset_id", "file_path", "byte_size", "checksum_md5", "segment_index"],
+      "properties": {
+        "asset_id": { "type": "string", "minLength": 1 },
+        "file_path": { "type": "string", "minLength": 1 },
+        "byte_size": { "type": "integer", "minimum": 0 },
+        "checksum_md5": { "type": ["string", "null"], "pattern": "^[0-9a-f]{32}$" },
+        "segment_index": { "type": ["integer", "null"], "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "extractionJob": {
+      "type": "object",
+      "description": "JOB- record for operation frame_extraction.",
+      "required": [
+        "job_id", "project_id", "session_id", "status", "settings", "decoder",
+        "output_directory", "sources", "frames_extracted", "frames_failed",
+        "warnings", "errors", "started_at", "finished_at", "processing_duration_s", "message"
+      ],
+      "properties": {
+        "job_id": { "type": "string", "pattern": "^JOB-[0-9a-f]{8}$" },
+        "project_id": { "type": "string", "pattern": "^MS-[0-9a-f]{8}$" },
+        "session_id": { "type": "string", "pattern": "^SES-[0-9a-f]{8}$" },
+        "status": { "enum": ["queued", "running", "done", "failed", "cancelled", "interrupted"] },
+        "settings": { "$ref": "#/$defs/extractionSettings" },
+        "decoder": { "$ref": "#/$defs/decoderIdentity" },
+        "output_directory": { "type": "string", "minLength": 1, "description": "Absolute or project-relative output directory, as stored." },
+        "sources": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/extractionSource" } },
+        "frames_extracted": { "type": ["integer", "null"], "minimum": 0 },
+        "frames_failed": { "type": "integer", "minimum": 0 },
+        "warnings": { "type": "array", "items": { "type": "string", "maxLength": 500 } },
+        "errors": { "type": "array", "items": { "type": "string", "maxLength": 500 } },
+        "started_at": { "$ref": "#/$defs/timestamp" },
+        "finished_at": { "type": ["string", "null"], "$ref": "#/$defs/timestamp" },
+        "processing_duration_s": { "type": ["number", "null"], "minimum": 0 },
+        "message": { "type": "string", "maxLength": 2000 }
+      },
+      "additionalProperties": false
+    },
+    "frameRecord": {
+      "type": "object",
+      "description": "One verified extracted frame (FRM-).",
+      "required": [
+        "frame_id", "job_id", "project_id", "session_id", "source_video_asset_id",
+        "source_video_segment_index", "frame_index", "file_path", "image_format",
+        "width", "height", "sample_time_s", "pts_ms", "time_base",
+        "capture_time_mapping", "capture_time_detail", "byte_size", "checksum_md5",
+        "extraction_method", "validation_status", "warnings", "created_at"
+      ],
+      "properties": {
+        "frame_id": { "type": "string", "pattern": "^FRM-[0-9a-f]{8}$" },
+        "job_id": { "type": "string", "pattern": "^JOB-[0-9a-f]{8}$" },
+        "project_id": { "type": "string", "pattern": "^MS-[0-9a-f]{8}$" },
+        "session_id": { "type": "string", "pattern": "^SES-[0-9a-f]{8}$" },
+        "source_video_asset_id": { "type": "string", "minLength": 1, "description": "The camera_video asset (VID-) this frame was decoded from." },
+        "source_video_segment_index": { "type": ["integer", "null"], "minimum": 0, "description": "Ordinal of the segment within its session, where known." },
+        "frame_index": { "type": "integer", "minimum": 0 },
+        "file_path": { "type": "string", "minLength": 1, "description": "Path of the image file relative to the job's output directory (join with job.output_directory to get the stored location)." },
+        "image_format": { "enum": ["png", "jpeg"] },
+        "width": { "type": ["integer", "null"], "minimum": 1 },
+        "height": { "type": ["integer", "null"], "minimum": 1 },
+        "sample_time_s": { "type": "number", "minimum": 0, "description": "Requested seek position in source media time, seconds — always recorded." },
+        "pts_ms": { "type": ["number", "null"], "minimum": 0, "description": "Decoded frame presentation timestamp; null unless the decoder reports it. Never guessed from frame rate." },
+        "time_base": { "type": ["string", "null"], "description": "Decoder-reported time base (e.g. '1/90000'); null unless reported." },
+        "capture_time_mapping": { "enum": ["unavailable", "other_documented"], "description": "Whether this frame's media time is tied to wall-clock capture time." },
+        "capture_time_detail": { "type": "string", "maxLength": 1000 },
+        "byte_size": { "type": "integer", "minimum": 0 },
+        "checksum_md5": { "type": "string", "pattern": "^[0-9a-f]{32}$" },
+        "extraction_method": { "enum": ["seek_decode", "pts_decode"], "description": "How the image was produced: seek+decode (platform) or pts-decode (FFmpeg)." },
+        "validation_status": { "enum": ["unverified", "pass", "failed"] },
+        "warnings": { "type": "array", "items": { "type": "string", "maxLength": 500 } },
+        "created_at": { "$ref": "#/$defs/timestamp" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

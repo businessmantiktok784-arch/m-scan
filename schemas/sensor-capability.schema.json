@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mining-scanner.local/schemas/sensor-capability.schema.json",
+  "title": "Sensor capability information (v1.1)",
+  "description": "What the device actually has, as verified by real API checks (Stage 2). v1.1 adds the per-hardware capability-state fields; the v1 boolean fields remain for compatibility. capability_state is one of: AVAILABLE, UNAVAILABLE, PERMISSION_DENIED, UNKNOWN, NOT_IMPLEMENTED. null means 'unknown — not probed yet'. Never assume LiDAR or depth hardware exists.",
+  "type": "object",
+  "required": ["platform", "camera_available", "depth_sensor_available", "imu_available", "checked_at"],
+  "properties": {
+    "platform": { "enum": ["android", "ios"] },
+    "camera_available": { "oneOf": [{ "type": "boolean" }, { "type": "null" }], "description": "v1 field, kept for compatibility. v1.1 prefers camera.capability_state." },
+    "depth_sensor_available": { "oneOf": [{ "type": "boolean" }, { "type": "null" }], "description": "True only after a verified depth/LiDAR probe; null until then." },
+    "imu_available": { "oneOf": [{ "type": "boolean" }, { "type": "null" }], "description": "v1 field, kept for compatibility." },
+    "device_description": { "type": "string", "maxLength": 200 },
+    "checked_at": { "type": "string", "description": "ISO 8601, UTC or explicit offset." },
+    "camera": { "$ref": "#/$defs/capabilityState" },
+    "camera_permission": { "$ref": "#/$defs/capabilityState", "description": "PERMISSION_DENIED covers both askable and permanently-denied; see camera_permission_permanent when present." },
+    "camera_permission_permanent": { "oneOf": [{ "type": "boolean" }, { "type": "null" }], "description": "True when the OS reports the permission can never be asked again (must be granted in Settings)." },
+    "accelerometer": { "$ref": "#/$defs/capabilityState" },
+    "gyroscope": { "$ref": "#/$defs/capabilityState" },
+    "magnetometer": { "$ref": "#/$defs/capabilityState" }
+  },
+  "$defs": {
+    "capabilityState": {
+      "oneOf": [
+        { "enum": ["AVAILABLE", "UNAVAILABLE", "PERMISSION_DENIED", "UNKNOWN", "NOT_IMPLEMENTED"] },
+        { "type": "null" }
+      ]
+    }
+  }
+}

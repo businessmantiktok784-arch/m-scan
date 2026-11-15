@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mining-scanner.local/schemas/mesh-asset.schema.json",
+  "title": "Mesh asset metadata (v1)",
+  "description": "Index record for a reconstructed mesh FILE. Tunnel mesh reconstruction belongs to later stages; this schema documents the storage contract now.",
+  "type": "object",
+  "required": ["asset_id", "project_id", "session_id", "file_path", "format", "coordinate_units", "coordinate_convention", "byte_size", "created_at"],
+  "properties": {
+    "asset_id": { "type": "string", "pattern": "^MSH-[0-9a-f]{8}$" },
+    "project_id": { "type": "string", "pattern": "^MS-[0-9a-f]{8}$" },
+    "session_id": { "oneOf": [{ "type": "string", "pattern": "^SES-[0-9a-f]{8}$" }, { "type": "null" }] },
+    "file_path": { "type": "string", "description": "Path relative to the project storage directory." },
+    "format": { "enum": ["obj", "stl", "fbx", "ply"] },
+    "coordinate_units": { "const": "metre" },
+    "coordinate_convention": { "const": "right-handed +X east +Y north +Z up, local origin" },
+    "vertex_count": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }] },
+    "triangle_count": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }] },
+    "byte_size": { "type": "integer", "minimum": 0 },
+    "created_at": { "$ref": "#/$defs/timestamp" }
+  },
+  "$defs": {
+    "timestamp": { "type": "string", "description": "ISO 8601, UTC or explicit offset." }
+  }
+}

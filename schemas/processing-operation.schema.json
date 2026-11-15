@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mining-scanner.local/schemas/processing-operation.schema.json",
+  "title": "Processing-operation metadata (v1)",
+  "description": "Record of one processing operation (registration, meshing, analysis). Stage 1 defines the schema only; no processing operations are produced yet.",
+  "type": "object",
+  "required": ["operation_id", "project_id", "operation", "status", "started_at", "finished_at"],
+  "properties": {
+    "operation_id": { "type": "string", "pattern": "^OP-[0-9a-f]{8}$" },
+    "project_id": { "type": "string", "pattern": "^MS-[0-9a-f]{8}$" },
+    "operation": { "type": "string", "minLength": 1, "maxLength": 80, "description": "Machine-readable name from the operation registry (documented in docs/data-exchange.md)." },
+    "status": { "enum": ["queued", "running", "done", "failed", "cancelled"] },
+    "started_at": { "$ref": "#/$defs/timestamp" },
+    "finished_at": { "oneOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }] },
+    "message": { "type": "string", "maxLength": 2000, "description": "Human-readable result or failure reason. Never fabricated measurements." }
+  },
+  "$defs": {
+    "timestamp": { "type": "string", "description": "ISO 8601, UTC or explicit offset." }
+  }
+}

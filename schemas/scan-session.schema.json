@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mining-scanner.local/schemas/scan-session.schema.json",
+  "title": "Scan-session metadata (v1)",
+  "description": "One capture session within a project. Stage 1 creates the planned session row when a project is created; sessions never claim captured data that does not exist.",
+  "type": "object",
+  "required": ["session_id", "project_id", "label", "status", "started_at", "ended_at"],
+  "properties": {
+    "session_id": { "type": "string", "pattern": "^SES-[0-9a-f]{8}$" },
+    "project_id": { "type": "string", "pattern": "^MS-[0-9a-f]{8}$" },
+    "label": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "status": { "enum": ["planned", "collecting", "collected", "aborted"], "description": "'collected' only ever means capture finished — never that processing happened." },
+    "started_at": { "$ref": "#/$defs/timestamp" },
+    "ended_at": { "oneOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }] },
+    "notes": { "type": "string", "maxLength": 2000 }
+  },
+  "$defs": {
+    "timestamp": { "type": "string", "description": "ISO 8601, UTC or explicit offset." }
+  }
+}
